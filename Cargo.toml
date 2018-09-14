@@ -2,6 +2,18 @@
 name = "indexlist"
 version = "0.1.0"
 authors = ["steveklabnik <steve@steveklabnik.com>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/steveklabnik/indexlist"
+documentation = "https://docs.rs/indexlist"
+homepage = "https://github.com/steveklabnik/indexlist"
+description = """
+A doubly linked list, backed by a vector
+"""
+
+[badges]
+travis-ci = { repository = "steveklabnik/indexlist" }
+appveyor = { repository = "steveklabnik/indexlist" }
 
 [dependencies]
 
