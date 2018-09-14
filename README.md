@@ -1,6 +1,6 @@
 # `indexlist` - A doubly linked list, backed by a vector.
 
-[![Build Status](https://travis-ci.org/steveklabnik/indexlist.svg?branch=master)](https://travis-ci.org/steveklabnik/indexlist) [![Build status](https://ci.appveyor.com/api/projects/status/baop9rw1tnd193or?svg=true)](https://ci.appveyor.com/project/steveklabnik/indexlist)
+[![Build Status](https://travis-ci.org/steveklabnik/indexlist.svg?branch=master)](https://travis-ci.org/steveklabnik/indexlist) [![Build status](https://ci.appveyor.com/api/projects/status/baop9rw1tnd193or/branch/master?svg=true)](https://ci.appveyor.com/project/steveklabnik/indexlist/branch/master)
 
 This crate provides a struct, `IndexList<T>`, which is a doubly-linked
 list. However, unlike a traditional linked list, which heap allocates
