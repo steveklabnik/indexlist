@@ -1,94 +1,94 @@
 //! A doubly linked list, backed by a vector.
-//! 
+//!
 //! This crate provides a struct, `IndexList<T>`, which is a doubly-linked
 //! list. However, unlike a traditional linked list, which heap allocates
 //! each of its nodes individually, all nodes are stored in a vector. Rather
 //! than provide pointers to nodes, an `Index` struct can be used to access
 //! a particular elemnt in the middle of the list.
-//! 
+//!
 //! # Safety
-//! 
+//!
 //! This crate uses `#![deny(unsafe_code)]` to ensure everything is implemented
 //! in 100% Safe Rust.
-//! 
+//!
 //! # Generational indexes
-//! 
+//!
 //! `Index` uses a generations scheme, so that if you hold an `Index` to a node,
 //! and it's removed, and a new node is allocated in its place, you do not access
 //! the new node.
-//! 
+//!
 //! # Performance
-//! 
+//!
 //! In general, performance is quite good. Benchmarks against the standard library's
 //! `LinkedList<T>` are provided. But some other details:
-//! 
+//!
 //! * The list keeps track of its head and tail for efficient insertion.
 //! * The underlying vector only grows, never shrinks. When a node is removed, its
 //!   entry is marked as free for future insertions.
 //! * Free entries are themselves kept as a singly-linked list, meaning that they
 //!   can be re-used efficiently.
-//! 
+//!
 //! # Missing features
-//! 
+//!
 //! Right now, I've only implemented a minimal number of features; there's `iter`
 //! but no `into_iter` and `iter_mut`. This is on the to-do list. PRs welcome!
-//! 
+//!
 //! # Examples
-//! 
+//!
 //! Creating a list, appending nodes, and printing them out:
-//! 
+//!
 //! ```
 //! extern crate indexlist;
-//! 
+//!
 //! use indexlist::IndexList;
-//! 
+//!
 //! let mut list = IndexList::new();
-//! 
+//!
 //! list.push_back(5);
 //! list.push_back(10);
 //! list.push_back(15);
-//! 
+//!
 //! // This prints 5, 10, and then 15, each on its own line
 //! for element in list.iter() {
 //!     println!("{}", element);
 //! }
 //! ```
-//! 
+//!
 //! Removing an item from the list:
-//! 
+//!
 //! ```
 //! extern crate indexlist;
-//! 
+//!
 //! use indexlist::IndexList;
-//! 
+//!
 //! let mut list = IndexList::new();
-//! 
+//!
 //! let five = list.push_back(5);
 //! list.push_back(10);
-//! 
+//!
 //! list.remove(five);
-//! 
+//!
 //! // 5 is no longer in the list
 //! assert!(list.get(five).is_none());
 //! ```
-//! 
+//!
 //! Generational indexes:
-//! 
+//!
 //! ```
 //! extern crate indexlist;
-//! 
+//!
 //! use indexlist::IndexList;
-//! 
+//!
 //! let mut list = IndexList::new();
-//! 
+//!
 //! let five = list.push_back(5);
 //! list.push_back(10);
-//! 
+//!
 //! list.remove(five);
-//! 
+//!
 //! // since we have a free spot, this will go where 5 was
 //! list.push_back(15);
-//! 
+//!
 //! // our index is out of date, and so will not return 15 here
 //! assert!(list.get(five).is_none());
 //! ```
@@ -96,7 +96,7 @@
 #![deny(unsafe_code)]
 
 /// A doubly linked list, backed by a vector.
-/// 
+///
 /// See the crate documentation for more.
 #[derive(Debug, PartialEq)]
 pub struct IndexList<T> {
@@ -125,50 +125,50 @@ struct OccupiedEntry<T> {
 ///
 /// If you have an `Index`, you can get or remove the item at that position in
 /// the list.
-/// 
+///
 /// # Generational indexes
-/// 
+///
 /// `Index` employs a "generational index" scheme. A "generation" is a counter,
 /// saved by the `IndexList<T>`. This counter increases whenever an item is
 /// removed from the list. Each item in the list keeps track of the generation
 /// it was inserted in.
-/// 
+///
 /// An Index also keeps track of a generation. When you attempt to manipulate an
 /// item in the list via an `Index`, the generations are compared. If the
 /// `Index`'s generation is older than the item at that position, it is stale,
 /// and so that item will not be returned or removed.
-/// 
+///
 /// This scheme lets us re-use removed slots in the list, while ensuring that
 /// you won't see bad data.
-/// 
+///
 /// # Examples
-/// 
+///
 /// You can get an `Index` by inserting something into the list:
-/// 
+///
 /// ```
 /// extern crate indexlist;
-/// 
+///
 /// use indexlist::IndexList;
-/// 
+///
 /// let mut list = IndexList::new();
-/// 
+///
 /// // this is an Index
 /// let index = list.push_back(5);
 /// ```
-/// 
+///
 /// You can also get one with `index_of`:
-/// 
+///
 /// ```
 /// extern crate indexlist;
-/// 
+///
 /// use indexlist::IndexList;
-/// 
+///
 /// let mut list = IndexList::new();
-/// 
+///
 /// let five = list.push_back(5);
-/// 
+///
 /// let index = list.index_of(&5);
-/// 
+///
 /// assert_eq!(Some(five), index);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -183,16 +183,16 @@ where
     T: std::fmt::Debug,
 {
     /// Creates a new `IndexList<T>`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Making a new list:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let list: IndexList<i32> = IndexList::new();
     /// ```
     pub fn new() -> IndexList<T> {
@@ -206,20 +206,20 @@ where
     }
 
     /// Creates a new `IndexList<T>` with a given capacity.
-    /// 
+    ///
     /// If you know roughly how many elements will be stored in the list,
     /// creating one with that capacity can reduce allocations, increasing
     /// performance.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Making a new list:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let list: IndexList<i32> = IndexList::with_capacity(100);
     /// ```
     pub fn with_capacity(size: usize) -> IndexList<T> {
@@ -233,39 +233,39 @@ where
     }
 
     /// Returns a reference to the first item in the list.
-    /// 
+    ///
     /// Will return `None` if the list is empty.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// The first item is often the first one that's pushed on:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
-    /// 
+    ///
     /// assert_eq!(list.head(), Some(&5));
     /// ```
-    /// 
+    ///
     /// But of course, not always!
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
-    /// 
+    ///
     /// // this will append to the front, so it's now the head
     /// list.push_front(10);
-    /// 
+    ///
     /// assert_eq!(list.head(), Some(&10));
     /// ```
     pub fn head(&self) -> Option<&T> {
@@ -278,22 +278,22 @@ where
     }
 
     /// Adds this item to the tail of the list.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Pushing several numbers into a list:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
     /// list.push_back(10);
     /// list.push_back(15);
-    /// 
+    ///
     /// // This prints 5, 10, and then 15, each on its own line
     /// for element in list.iter() {
     ///     println!("{}", element);
@@ -394,22 +394,22 @@ where
     }
 
     /// Adds this item to the head of the list.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Pushing several numbers into a list:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_front(5);
     /// list.push_front(10);
     /// list.push_front(15);
-    /// 
+    ///
     /// // This prints 15, 10, and then 5, each on its own line
     /// for element in list.iter() {
     ///     println!("{}", element);
@@ -486,25 +486,25 @@ where
     }
 
     /// Does this list contain this element?
-    /// 
+    ///
     /// Returns true if it does, and false if it does not.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Checking both possibilities:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
-    /// 
+    ///
     /// // our list does contain five
     /// assert!(list.contains(&5));
-    /// 
+    ///
     /// // our list does not contain ten
     /// assert!(!list.contains(&10));
     /// ```
@@ -513,64 +513,64 @@ where
     }
 
     /// Returns the item at this index if it exists.
-    /// 
+    ///
     /// If there's an item at this index, then this will return a reference to
     /// it. If not, returns `None`.
-    /// 
+    ///
     /// Indexes are generational, and so this method will use the generation to
     /// determine if this element exists. For more, see [`Index`'s documentation].
-    /// 
+    ///
     /// [`Index`'s documentation]: struct.Index.html
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Getting an element at an index:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
-    /// 
+    ///
     /// assert_eq!(list.get(five), Some(&5));
     /// ```
-    /// 
+    ///
     /// An element that doesn't exist returns `None`:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
-    /// 
+    ///
     /// list.remove(five);
-    /// 
+    ///
     /// assert!(list.get(five).is_none());
     /// ```
-    /// 
+    ///
     /// Generational indexes ensure that we don't access incorrect items:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
     /// list.push_back(10);
-    /// 
+    ///
     /// list.remove(five);
-    /// 
+    ///
     /// // since we have a free spot, this will go where 5 was
     /// list.push_back(15);
-    /// 
+    ///
     /// // our index is out of date, and so will not return 15 here
     /// assert!(list.get(five).is_none());
     /// ```
@@ -582,67 +582,67 @@ where
     }
 
     /// Removes the item at this index, and returns the removed item.
-    /// 
+    ///
     /// If there's an item at this index, then this will remove it from the list
     /// and return it. If there isn't, it will return `None`.
-    /// 
+    ///
     /// Indexes are generational, and so this method will use the generation to
     /// determine if this element exists. For more, see [`Index`'s documentation].
-    /// 
+    ///
     /// [`Index`'s documentation]: struct.Index.html
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Removing an element from an index:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
-    /// 
+    ///
     /// let five = list.remove(five);
     /// assert_eq!(five, Some(5));
-    /// 
+    ///
     /// assert!(!list.contains(&5));
     /// ```
-    /// 
+    ///
     /// An element that doesn't exist returns `None`:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
-    /// 
+    ///
     /// list.remove(five);
-    /// 
+    ///
     /// assert!(list.remove(five).is_none());
     /// ```
-    /// 
+    ///
     /// Generational indexes ensure that we don't access incorrect items:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
     /// list.push_back(10);
-    /// 
+    ///
     /// list.remove(five);
-    /// 
+    ///
     /// // since we have a free spot, this will go where 5 was
     /// list.push_back(15);
-    /// 
+    ///
     /// // our index is out of date, and so will not return 15 here
     /// assert!(list.remove(five).is_none());
     /// ```
@@ -663,7 +663,7 @@ where
                 }
 
                 (e.prev, index.index, e.next)
-            },
+            }
         };
 
         let removed = std::mem::replace(
@@ -742,22 +742,22 @@ where
     }
 
     /// Returns an iterator of references to the items in the list.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Using an iterator to print out all of the items in a list:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
     /// list.push_back(10);
     /// list.push_back(15);
-    /// 
+    ///
     /// // This prints 5, 10, and then 15, each on its own line
     /// for element in list.iter() {
     ///     println!("{}", element);
@@ -771,24 +771,24 @@ where
     }
 
     /// Returns an `Index` to this item.
-    /// 
+    ///
     /// If this item is not in the list, returns `None`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Finding an item:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// let five = list.push_back(5);
-    /// 
+    ///
     /// let index = list.index_of(&5);
-    /// 
+    ///
     /// assert_eq!(Some(five), index);
     /// ```
     pub fn index_of(&self, item: &T) -> Option<Index> {
@@ -806,26 +806,26 @@ where
     }
 
     /// Removes the head of the list.
-    /// 
+    ///
     /// If an item was removed, this will also return it.
-    /// 
+    ///
     /// If this list is empty, returns `None`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Removing the head:
-    /// 
+    ///
     /// ```
     /// extern crate indexlist;
-    /// 
+    ///
     /// use indexlist::IndexList;
-    /// 
+    ///
     /// let mut list = IndexList::new();
-    /// 
+    ///
     /// list.push_back(5);
-    /// 
+    ///
     /// assert_eq!(list.pop_front(), Some(5));
-    /// 
+    ///
     /// assert_eq!(list.iter().count(), 0);
     /// ```
     pub fn pop_front(&mut self) -> Option<T> {
