@@ -4,7 +4,7 @@
 //! list. However, unlike a traditional linked list, which heap allocates
 //! each of its nodes individually, all nodes are stored in a vector. Rather
 //! than provide pointers to nodes, an `Index` struct can be used to access
-//! a particular elemnt in the middle of the list.
+//! a particular element in the middle of the list.
 //!
 //! # Safety
 //!
