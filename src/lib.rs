@@ -797,17 +797,24 @@ where
     /// assert_eq!(Some(five), index);
     /// ```
     pub fn index_of(&self, item: &T) -> Option<Index<T>> {
-        let generation = self.generation;
+        let mut next = self.head;
 
-        for (index, e) in self.contents.iter().enumerate() {
-            if let Entry::Occupied(e) = e {
-                if &e.item == item {
-                    return Some(Index::new(index, generation));
+        loop {
+            match next {
+                None => return None,
+                Some(index) => {
+                    let ref entry = match &self.contents[index] {
+                        Entry::Free { .. } => panic!("Corrupt list"),
+                        Entry::Occupied(entry) => entry,
+                    };
+                    if &entry.item == item {
+                        return Some(Index::new(index, entry.generation));
+                    } else {
+                        next = entry.next;
+                    }
                 }
             }
         }
-
-        None
     }
 
     /// Removes the head of the list.
@@ -1410,6 +1417,40 @@ mod tests {
         assert_eq!(list.index_of(&10).unwrap(), Index::new(1, 0));
 
         assert!(list.index_of(&20).is_none());
+    }
+
+    #[test]
+    fn index_of_get_correct_generation() {
+        let mut list = IndexList::new();
+
+        list.push_back(5);
+        let ten = list.push_back(10);
+        list.remove(ten);
+        list.push_back(15);
+
+        assert_eq!(
+            list.index_of(&5).unwrap(),
+            Index {
+                index: 0,
+                generation: 0,
+            }
+        );
+    }
+
+    #[test]
+    fn index_of_get_first_occurrence() {
+        let mut list = IndexList::new();
+
+        list.push_back(3);
+        let six = list.push_back(6);
+        let first_nine = list.push_back(9);
+        list.push_back(12);
+
+        list.remove(six);
+
+        let _second_nine = list.push_back(9);
+
+        assert_eq!(list.index_of(&9).unwrap(), first_nine);
     }
 
     #[test]
