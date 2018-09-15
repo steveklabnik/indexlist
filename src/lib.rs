@@ -94,6 +94,7 @@
 //! ```
 
 #![deny(unsafe_code)]
+use std::marker::PhantomData;
 
 /// A doubly linked list, backed by a vector.
 ///
@@ -172,9 +173,16 @@ struct OccupiedEntry<T> {
 /// assert_eq!(Some(five), index);
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Index {
+pub struct Index<T> {
     index: usize,
     generation: usize,
+    _marker: PhantomData<T>
+}
+
+impl<T> Index<T> {
+    fn new(index: usize, generation: usize) -> Index<T> {
+        Index { index, generation, _marker: PhantomData }
+    }
 }
 
 impl<T> IndexList<T>
@@ -299,7 +307,7 @@ where
     ///     println!("{}", element);
     /// }
     /// ```
-    pub fn push_back(&mut self, item: T) -> Index {
+    pub fn push_back(&mut self, item: T) -> Index<T> {
         // first, we need to find a suitable place to insert
 
         // is the head of the list empty? If so, that's easy.
@@ -336,7 +344,7 @@ where
             self.tail = Some(index);
             self.head = Some(index);
 
-            return Index { index, generation };
+            return Index::new(index, generation);
         }
 
         // if it isn't empty, then we need to check the free list and put our
@@ -375,10 +383,7 @@ where
         };
 
         // and then fix up the tail to refer to it
-        let new_index = Index {
-            index: position,
-            generation: self.generation,
-        };
+        let new_index = Index::new(position, self.generation);
 
         // we found this index before so we know it exists
         match &mut self.contents[tail_index] {
@@ -415,7 +420,7 @@ where
     ///     println!("{}", element);
     /// }
     /// ```
-    pub fn push_front(&mut self, item: T) -> Index {
+    pub fn push_front(&mut self, item: T) -> Index<T> {
         // first, we need to find a suitable place to insert
 
         // is the head of the list empty? If so, that's easy.
@@ -430,10 +435,7 @@ where
             self.tail = Some(0);
             self.head = Some(0);
 
-            return Index {
-                index: 0,
-                generation: self.generation,
-            };
+            return Index::new(0, self.generation);
         }
 
         // if it isn't empty, then we need to check the free list and put our
@@ -465,10 +467,7 @@ where
             position
         };
 
-        let new_index = Index {
-            index: position,
-            generation: self.generation,
-        };
+        let new_index = Index::new(position, self.generation);
 
         // and then fix up the head to refer to it
 
@@ -574,7 +573,7 @@ where
     /// // our index is out of date, and so will not return 15 here
     /// assert!(list.get(five).is_none());
     /// ```
-    pub fn get(&self, index: Index) -> Option<&T> {
+    pub fn get(&self, index: Index<T>) -> Option<&T> {
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => Some(&e.item),
             _ => None,
@@ -646,7 +645,7 @@ where
     /// // our index is out of date, and so will not return 15 here
     /// assert!(list.remove(five).is_none());
     /// ```
-    pub fn remove(&mut self, index: Index) -> Option<T> {
+    pub fn remove(&mut self, index: Index<T>) -> Option<T> {
         // if we have no head or tail, then we have an emtpy list, so return
         let head_index = self.head?;
         let tail_index = self.tail?;
@@ -791,13 +790,13 @@ where
     ///
     /// assert_eq!(Some(five), index);
     /// ```
-    pub fn index_of(&self, item: &T) -> Option<Index> {
+    pub fn index_of(&self, item: &T) -> Option<Index<T>> {
         let generation = self.generation;
 
         for (index, e) in self.contents.iter().enumerate() {
             if let Entry::Occupied(e) = e {
                 if &e.item == item {
-                    return Some(Index { index, generation });
+                    return Some(Index::new(index, generation ));
                 }
             }
         }
@@ -914,6 +913,14 @@ impl<'a, T> Iterator for Iter<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn create_index() {
+        let index: Index<i32> = Index::new(1, 2);
+
+        assert_eq!(index.index, 1);
+        assert_eq!(index.generation, 2);
+    }
 
     #[test]
     fn create_list() {
@@ -1315,10 +1322,7 @@ mod tests {
 
         assert_eq!(
             list.index_of(&10).unwrap(),
-            Index {
-                index: 1,
-                generation: 0,
-            }
+            Index::new(1, 0)
         );
 
         assert!(list.index_of(&20).is_none());
