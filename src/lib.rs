@@ -435,17 +435,7 @@ where
 
         // is the head of the list empty? If so, that's easy.
         if self.head.is_none() {
-            self.contents.push(Entry::Occupied(OccupiedEntry {
-                item,
-                generation: self.generation,
-                next: None,
-                prev: None,
-            }));
-
-            self.tail = Some(0);
-            self.head = Some(0);
-
-            return Index::new(0, self.generation);
+            return self.push_back(item);
         }
 
         // if it isn't empty, then we need to check the free list and put our
@@ -455,6 +445,12 @@ where
         let head_index = self.head.unwrap();
 
         let position = if let Some(position) = self.next_free {
+            // update next_free
+            match self.contents[position] {
+                Entry::Occupied { .. } => panic!("Corrupted list"),
+                Entry::Free { next_free } => self.next_free = next_free,
+            }
+
             self.contents[position] = Entry::Occupied(OccupiedEntry {
                 item,
                 generation: self.generation,
@@ -1476,6 +1472,48 @@ mod tests {
                 next_free: Some(0),
                 head: None,
                 tail: None,
+            }
+        );
+    }
+
+    #[test]
+    fn push_front_next_free() {
+        let mut list = IndexList::new();
+
+        list.push_front(0);
+        list.push_front(73);
+        list.pop_front();
+
+        list.push_front(1);
+        list.push_front(2);
+
+        assert_eq!(
+            list,
+            IndexList {
+                contents: vec![
+                    Entry::Occupied(OccupiedEntry {
+                        item: 0,
+                        next: None,
+                        prev: Some(1),
+                        generation: 0
+                    }),
+                    Entry::Occupied(OccupiedEntry {
+                        item: 1,
+                        next: Some(0),
+                        prev: Some(2),
+                        generation: 1
+                    }),
+                    Entry::Occupied(OccupiedEntry {
+                        item: 2,
+                        next: Some(1),
+                        prev: None,
+                        generation: 1
+                    })
+                ],
+                generation: 1,
+                next_free: None,
+                head: Some(2),
+                tail: Some(0),
             }
         );
     }
