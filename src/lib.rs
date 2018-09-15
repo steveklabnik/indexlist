@@ -177,6 +177,18 @@ pub struct Index {
     generation: usize,
 }
 
+impl<T> Default for IndexList<T> {
+    fn default() -> Self {
+        IndexList {
+            contents: Default::default(),
+            generation: Default::default(),
+            next_free: Default::default(),
+            head: Default::default(),
+            tail: Default::default(),
+        }
+    }
+}
+
 impl<T> IndexList<T>
 where
     T: PartialEq,
@@ -196,13 +208,7 @@ where
     /// let list: IndexList<i32> = IndexList::new();
     /// ```
     pub fn new() -> IndexList<T> {
-        IndexList {
-            contents: Vec::new(),
-            generation: 0,
-            next_free: None,
-            head: None,
-            tail: None,
-        }
+        Self::default()
     }
 
     /// Creates a new `IndexList<T>` with a given capacity.
