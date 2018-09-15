@@ -176,12 +176,16 @@ struct OccupiedEntry<T> {
 pub struct Index<T> {
     index: usize,
     generation: usize,
-    _marker: PhantomData<T>
+    _marker: PhantomData<T>,
 }
 
 impl<T> Index<T> {
     fn new(index: usize, generation: usize) -> Index<T> {
-        Index { index, generation, _marker: PhantomData }
+        Index {
+            index,
+            generation,
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -796,7 +800,7 @@ where
         for (index, e) in self.contents.iter().enumerate() {
             if let Entry::Occupied(e) = e {
                 if &e.item == item {
-                    return Some(Index::new(index, generation ));
+                    return Some(Index::new(index, generation));
                 }
             }
         }
@@ -1320,10 +1324,7 @@ mod tests {
         list.push_back(10);
         list.push_back(15);
 
-        assert_eq!(
-            list.index_of(&10).unwrap(),
-            Index::new(1, 0)
-        );
+        assert_eq!(list.index_of(&10).unwrap(), Index::new(1, 0));
 
         assert!(list.index_of(&20).is_none());
     }
