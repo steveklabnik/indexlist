@@ -799,22 +799,22 @@ where
     pub fn index_of(&self, item: &T) -> Option<Index<T>> {
         let mut next = self.head;
 
-        loop {
-            match next {
-                None => return None,
-                Some(index) => {
-                    let ref entry = match &self.contents[index] {
-                        Entry::Free { .. } => panic!("Corrupt list"),
-                        Entry::Occupied(entry) => entry,
-                    };
-                    if &entry.item == item {
-                        return Some(Index::new(index, entry.generation));
-                    } else {
-                        next = entry.next;
-                    }
-                }
+        // iterate through entries from the front of the list
+        while let Some(index) = next {
+            // this should always be occupied because the index comes from a previous list items `next` field
+            let ref entry = match &self.contents[index] {
+                Entry::Free { .. } => panic!("Corrupt list"),
+                Entry::Occupied(entry) => entry,
+            };
+            // if we find the item, return the index, otherwise check the next list item
+            if &entry.item == item {
+                return Some(Index::new(index, entry.generation));
+            } else {
+                next = entry.next;
             }
         }
+
+        None
     }
 
     /// Removes the head of the list.
@@ -1433,6 +1433,7 @@ mod tests {
             Index {
                 index: 0,
                 generation: 0,
+                _marker: PhantomData
             }
         );
     }
