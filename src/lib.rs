@@ -911,6 +911,18 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
+impl<T> std::ops::Index<Index> for IndexList<T>
+where
+    T: PartialEq,
+    T: std::fmt::Debug,
+{
+    type Output = T;
+
+    fn index(&self, index: Index) -> &Self::Output {
+        self.get(index).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -957,6 +969,17 @@ mod tests {
         assert!(entry.is_some());
 
         assert_eq!(entry.unwrap(), &5);
+    }
+
+    #[test]
+    fn index() {
+        let mut list = IndexList::new();
+
+        let five = list.push_back(5);
+
+        let entry = list[five];
+
+        assert_eq!(entry, 5);
     }
 
     #[test]
