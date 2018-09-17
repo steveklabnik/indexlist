@@ -892,6 +892,46 @@ where
     }
 }
 
+impl<T> IntoIterator for IndexList<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let next_index = self.head;
+
+        IntoIter {
+            list: self,
+            next_index,
+        }
+    }
+}
+
+pub struct IntoIter<T> {
+    list: IndexList<T>,
+    next_index: Option<usize>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next_index = self.next_index?;
+        let entry = std::mem::replace(
+            &mut self.list.contents[next_index],
+            Entry::Free { next_free: None },
+        );
+
+        match entry {
+            Entry::Free { .. } => panic!("Corrupted list"),
+            Entry::Occupied(e) => {
+                self.next_index = e.next;
+
+                Some(e.item)
+            }
+        }
+    }
+}
+
 struct Iter<'a, T>
 where
     T: 'a,
@@ -1187,6 +1227,24 @@ mod tests {
         assert_eq!(five_entry, 5);
 
         assert!(list.remove(five_index).is_none());
+    }
+
+    #[test]
+    fn into_iter() {
+        let mut list = IndexList::new();
+
+        list.push_back(5);
+        let ten = list.push_back(10);
+        list.push_back(15);
+
+        list.remove(ten);
+
+        let mut iter = list.into_iter();
+
+        assert_eq!(iter.next().unwrap(), 5);
+        assert_eq!(iter.next().unwrap(), 15);
+
+        assert!(iter.next().is_none());
     }
 
     #[test]
