@@ -960,14 +960,14 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<T> std::ops::Index<Index> for IndexList<T>
+impl<T> std::ops::Index<Index<T>> for IndexList<T>
 where
     T: PartialEq,
     T: std::fmt::Debug,
 {
     type Output = T;
 
-    fn index(&self, index: Index) -> &Self::Output {
+    fn index(&self, index: Index<T>) -> &Self::Output {
         self.get(index).unwrap()
     }
 }
