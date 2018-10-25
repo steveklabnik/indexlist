@@ -31,7 +31,7 @@
 //! # Missing features
 //!
 //! Right now, I've only implemented a minimal number of features; there's `iter`
-//! but no `into_iter` and `iter_mut`. This is on the to-do list. PRs welcome!
+//! and `into_iter` but no `iter_mut`. This is on the to-do list. PRs welcome!
 //!
 //! # Examples
 //!
@@ -293,6 +293,51 @@ where
             Entry::Free { .. } => None,
             Entry::Occupied(e) => Some(&e.item),
         })
+    }
+
+    /// Returns a mutable reference to the first item in the list.
+    ///
+    /// Will return `None` if the list is empty.
+    ///
+    /// # Examples
+    ///
+    /// The first item is often the first one that's pushed on:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// list.push_back(5);
+    ///
+    /// assert_eq!(list.head_mut(), Some(&mut 5));
+    /// ```
+    ///
+    /// But of course, not always!
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// list.push_back(5);
+    ///
+    /// // this will append to the front, so it's now the head
+    /// list.push_front(10);
+    ///
+    /// assert_eq!(list.head_mut(), Some(&mut 10));
+    /// ```
+    pub fn head_mut(&mut self) -> Option<&mut T> {
+        let index = self.head?;
+
+        match &mut self.contents[index] {
+            Entry::Free { .. } => None,
+            Entry::Occupied(e) => Some(&mut e.item),
+        }
     }
 
     pub fn head_index(&self) -> Option<Index<T>> {
@@ -604,6 +649,75 @@ where
         }
     }
 
+    /// Returns the item at this index if it exists.
+    ///
+    /// If there's an item at this index, then this will return a mutable reference to
+    /// it. If not, returns `None`.
+    ///
+    /// Indexes are generational, and so this method will use the generation to
+    /// determine if this element exists. For more, see [`Index`'s documentation].
+    ///
+    /// [`Index`'s documentation]: struct.Index.html
+    ///
+    /// # Examples
+    ///
+    /// Getting an element at an index:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    ///
+    /// assert_eq!(list.get_mut(five), Some(&mut 5));
+    /// ```
+    ///
+    /// An element that doesn't exist returns `None`:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    ///
+    /// list.remove(five);
+    ///
+    /// assert!(list.get_mut(five).is_none());
+    /// ```
+    ///
+    /// Generational indexes ensure that we don't access incorrect items:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    /// list.push_back(10);
+    ///
+    /// list.remove(five);
+    ///
+    /// // since we have a free spot, this will go where 5 was
+    /// list.push_back(15);
+    ///
+    /// // our index is out of date, and so will not return 15 here
+    /// assert!(list.get_mut(five).is_none());
+    /// ```
+    pub fn get_mut(&mut self, index: Index<T>) -> Option<&mut T> {
+        match &mut self.contents[index.index] {
+            Entry::Occupied(e) if e.generation == index.generation => Some(&mut e.item),
+            _ => None,
+        }
+    }
+
     pub fn next_index(&self, index: Index<T>) -> Option<Index<T>> {
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => {
@@ -720,7 +834,6 @@ where
         };
 
         let removed = std::mem::replace(
-            // we know this index is valid thanks to the get on line 224
             &mut self.contents[index],
             Entry::Free {
                 next_free: self.next_free,
@@ -901,7 +1014,6 @@ where
         };
 
         let removed = std::mem::replace(
-            // we know this index is valid thanks to the get on line 224
             &mut self.contents[head_index],
             Entry::Free {
                 next_free: self.next_free,
@@ -1023,6 +1135,16 @@ where
     }
 }
 
+impl<T> std::ops::IndexMut<Index<T>> for IndexList<T>
+where
+    T: PartialEq,
+    T: std::fmt::Debug,
+{
+    fn index_mut(&mut self, index: Index<T>) -> &mut Self::Output {
+        self.get_mut(index).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1080,6 +1202,19 @@ mod tests {
     }
 
     #[test]
+    fn get_mut() {
+        let mut list = IndexList::new();
+
+        let five = list.push_back(5);
+
+        let entry = list.get_mut(five);
+
+        assert!(entry.is_some());
+
+        assert_eq!(entry.unwrap(), &mut 5);
+    }
+
+    #[test]
     fn next_index() {
         let mut list = IndexList::new();
 
@@ -1118,6 +1253,23 @@ mod tests {
         let entry = list[five];
 
         assert_eq!(entry, 5);
+    }
+
+    #[test]
+    fn index_mut() {
+        let mut list = IndexList::new();
+
+        let five = list.push_back(5);
+
+        let mut entry = list[five];
+
+        entry += 1;
+
+        let six = list.push_back(entry);
+
+        let new_entry = list[six];
+
+        assert_eq!(new_entry, 6);
     }
 
     #[test]
@@ -1429,6 +1581,37 @@ mod tests {
         list.remove(five);
 
         assert_eq!(list.head().unwrap(), &10);
+
+        assert_eq!(list.contents[0], Entry::Free { next_free: None });
+
+        assert_eq!(list.head, Some(1));
+
+        assert_eq!(
+            list.contents[1],
+            Entry::Occupied(OccupiedEntry {
+                item: 10,
+                next: None,
+                prev: None,
+                generation: 0,
+            })
+        );
+    }
+
+    #[test]
+    fn head_mut() {
+        let mut list = IndexList::new();
+
+        assert!(list.head_mut().is_none());
+
+        let five = list.push_back(5);
+
+        assert_eq!(list.head_mut().unwrap(), &mut 5);
+
+        list.push_back(10);
+
+        list.remove(five);
+
+        assert_eq!(list.head_mut().unwrap(), &mut 10);
 
         assert_eq!(list.contents[0], Entry::Free { next_free: None });
 
