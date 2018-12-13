@@ -590,15 +590,13 @@ where
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => {
                 match e.next {
-                    Some(index) => {
-                        match self.contents.get(index)? {
-                            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
-                            _ => panic!("Corrupted list"),
-                        }
+                    Some(index) => match self.contents.get(index)? {
+                        Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+                        _ => panic!("Corrupted list"),
                     },
                     _ => None, // this element was at the end of the list
                 }
-            },
+            }
             _ => None, // this was an invalid or outdated index
         }
     }
@@ -607,15 +605,13 @@ where
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => {
                 match e.prev {
-                    Some(index) => {
-                        match self.contents.get(index)? {
-                            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
-                            _ => panic!("Corrupted list"),
-                        }
+                    Some(index) => match self.contents.get(index)? {
+                        Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+                        _ => panic!("Corrupted list"),
                     },
                     _ => None, // this element was at the end of the list
                 }
-            },
+            }
             _ => None, // this was an invalid or outdated index
         }
     }
