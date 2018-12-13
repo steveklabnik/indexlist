@@ -295,6 +295,24 @@ where
         })
     }
 
+    pub fn head_index(&self) -> Option<Index<T>> {
+        let index = self.head?;
+
+        self.contents.get(index).and_then(|e| match e {
+            Entry::Free { .. } => None,
+            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+        })
+    }
+
+    pub fn tail_index(&self) -> Option<Index<T>> {
+        let index = self.tail?;
+
+        self.contents.get(index).and_then(|e| match e {
+            Entry::Free { .. } => None,
+            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+        })
+    }
+
     /// Adds this item to the tail of the list.
     ///
     /// # Examples
@@ -586,7 +604,7 @@ where
         }
     }
 
-    pub fn next(&self, index: Index<T>) -> Option<Index<T>> {
+    pub fn next_index(&self, index: Index<T>) -> Option<Index<T>> {
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => {
                 match e.next {
@@ -601,7 +619,7 @@ where
         }
     }
 
-    pub fn prev(&self, index: Index<T>) -> Option<Index<T>> {
+    pub fn prev_index(&self, index: Index<T>) -> Option<Index<T>> {
         match self.contents.get(index.index)? {
             Entry::Occupied(e) if e.generation == index.generation => {
                 match e.prev {
@@ -1062,33 +1080,33 @@ mod tests {
     }
 
     #[test]
-    fn next() {
+    fn next_index() {
         let mut list = IndexList::new();
 
         let five = list.push_back(5);
         let _ten = list.push_back(10);
 
-        let ten_index = list.next(five).unwrap();
+        let ten_index = list.next_index(five).unwrap();
 
         let ten_value = list.get(ten_index);
 
         assert_eq!(ten_value.unwrap(), &10);
-        assert_eq!(None, list.next(ten_index));
+        assert_eq!(None, list.next_index(ten_index));
     }
 
     #[test]
-    fn prev() {
+    fn prev_index() {
         let mut list = IndexList::new();
 
         let _five = list.push_back(5);
         let ten = list.push_back(10);
 
-        let five_index = list.prev(ten).unwrap();
+        let five_index = list.prev_index(ten).unwrap();
 
         let five_value = list.get(five_index);
 
         assert_eq!(five_value.unwrap(), &5);
-        assert_eq!(None, list.prev(five_index));
+        assert_eq!(None, list.prev_index(five_index));
     }
 
     #[test]
@@ -1425,6 +1443,29 @@ mod tests {
                 generation: 0,
             })
         );
+    }
+
+    #[test]
+    fn head_index() {
+        let mut list = IndexList::new();
+
+        assert!(list.head_index().is_none());
+
+        let five = list.push_back(5);
+
+        assert_eq!(list.head_index().unwrap(), five);
+    }
+
+    #[test]
+    fn tail_index() {
+        let mut list = IndexList::new();
+
+        assert!(list.tail_index().is_none());
+
+        let _five = list.push_back(5);
+        let ten = list.push_back(10);
+
+        assert_eq!(list.tail_index().unwrap(), ten);
     }
 
     #[test]
