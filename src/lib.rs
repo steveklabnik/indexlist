@@ -586,6 +586,40 @@ where
         }
     }
 
+    pub fn next(&self, index: Index<T>) -> Option<Index<T>> {
+        match self.contents.get(index.index)? {
+            Entry::Occupied(e) if e.generation == index.generation => {
+                match e.next {
+                    Some(index) => {
+                        match self.contents.get(index)? {
+                            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+                            _ => panic!("Corrupted list"),
+                        }
+                    },
+                    _ => None, // this element was at the end of the list
+                }
+            },
+            _ => None, // this was an invalid or outdated index
+        }
+    }
+
+    pub fn prev(&self, index: Index<T>) -> Option<Index<T>> {
+        match self.contents.get(index.index)? {
+            Entry::Occupied(e) if e.generation == index.generation => {
+                match e.prev {
+                    Some(index) => {
+                        match self.contents.get(index)? {
+                            Entry::Occupied(e) => Some(Index::new(index, e.generation)),
+                            _ => panic!("Corrupted list"),
+                        }
+                    },
+                    _ => None, // this element was at the end of the list
+                }
+            },
+            _ => None, // this was an invalid or outdated index
+        }
+    }
+
     /// Removes the item at this index, and returns the removed item.
     ///
     /// If there's an item at this index, then this will remove it from the list
@@ -1029,6 +1063,36 @@ mod tests {
         assert!(entry.is_some());
 
         assert_eq!(entry.unwrap(), &5);
+    }
+
+    #[test]
+    fn next() {
+        let mut list = IndexList::new();
+
+        let five = list.push_back(5);
+        let _ten = list.push_back(10);
+
+        let ten_index = list.next(five).unwrap();
+
+        let ten_value = list.get(ten_index);
+
+        assert_eq!(ten_value.unwrap(), &10);
+        assert_eq!(None, list.next(ten_index));
+    }
+
+    #[test]
+    fn prev() {
+        let mut list = IndexList::new();
+
+        let _five = list.push_back(5);
+        let ten = list.push_back(10);
+
+        let five_index = list.prev(ten).unwrap();
+
+        let five_value = list.get(five_index);
+
+        assert_eq!(five_value.unwrap(), &5);
+        assert_eq!(None, list.prev(five_index));
     }
 
     #[test]
