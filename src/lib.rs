@@ -201,11 +201,7 @@ impl<T> Default for IndexList<T> {
     }
 }
 
-impl<T> IndexList<T>
-where
-    T: PartialEq,
-    T: std::fmt::Debug,
-{
+impl<T> IndexList<T> {
     /// Creates a new `IndexList<T>`.
     ///
     /// # Examples
@@ -551,33 +547,6 @@ where
 
         // and finally, return the index associated with our new tail
         new_index
-    }
-
-    /// Does this list contain this element?
-    ///
-    /// Returns true if it does, and false if it does not.
-    ///
-    /// # Examples
-    ///
-    /// Checking both possibilities:
-    ///
-    /// ```
-    /// extern crate indexlist;
-    ///
-    /// use indexlist::IndexList;
-    ///
-    /// let mut list = IndexList::new();
-    ///
-    /// list.push_back(5);
-    ///
-    /// // our list does contain five
-    /// assert!(list.contains(&5));
-    ///
-    /// // our list does not contain ten
-    /// assert!(!list.contains(&10));
-    /// ```
-    pub fn contains(&self, value: &T) -> bool {
-        self.iter().any(|e| e == value)
     }
 
     /// Returns the item at this index if it exists.
@@ -936,48 +905,6 @@ where
         }
     }
 
-    /// Returns an `Index` to this item.
-    ///
-    /// If this item is not in the list, returns `None`.
-    ///
-    /// # Examples
-    ///
-    /// Finding an item:
-    ///
-    /// ```
-    /// extern crate indexlist;
-    ///
-    /// use indexlist::IndexList;
-    ///
-    /// let mut list = IndexList::new();
-    ///
-    /// let five = list.push_back(5);
-    ///
-    /// let index = list.index_of(&5);
-    ///
-    /// assert_eq!(Some(five), index);
-    /// ```
-    pub fn index_of(&self, item: &T) -> Option<Index<T>> {
-        let mut next = self.head;
-
-        // iterate through entries from the front of the list
-        while let Some(index) = next {
-            // this should always be occupied because the index comes from a previous list items `next` field
-            let ref entry = match &self.contents[index] {
-                Entry::Free { .. } => panic!("Corrupt list"),
-                Entry::Occupied(entry) => entry,
-            };
-            // if we find the item, return the index, otherwise check the next list item
-            if &entry.item == item {
-                return Some(Index::new(index, entry.generation));
-            } else {
-                next = entry.next;
-            }
-        }
-
-        None
-    }
-
     /// Removes the head of the list.
     ///
     /// If an item was removed, this will also return it.
@@ -1055,6 +982,80 @@ where
     }
 }
 
+impl<T> IndexList<T>
+where
+    T: PartialEq,
+{
+    /// Does this list contain this element?
+    ///
+    /// Returns true if it does, and false if it does not.
+    ///
+    /// # Examples
+    ///
+    /// Checking both possibilities:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// list.push_back(5);
+    ///
+    /// // our list does contain five
+    /// assert!(list.contains(&5));
+    ///
+    /// // our list does not contain ten
+    /// assert!(!list.contains(&10));
+    /// ```
+    pub fn contains(&self, value: &T) -> bool {
+        self.iter().any(|e| e == value)
+    }
+
+    /// Returns an `Index` to this item.
+    ///
+    /// If this item is not in the list, returns `None`.
+    ///
+    /// # Examples
+    ///
+    /// Finding an item:
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    ///
+    /// let index = list.index_of(&5);
+    ///
+    /// assert_eq!(Some(five), index);
+    /// ```
+    pub fn index_of(&self, item: &T) -> Option<Index<T>> {
+        let mut next = self.head;
+
+        // iterate through entries from the front of the list
+        while let Some(index) = next {
+            // this should always be occupied because the index comes from a previous list items `next` field
+            let ref entry = match &self.contents[index] {
+                Entry::Free { .. } => panic!("Corrupt list"),
+                Entry::Occupied(entry) => entry,
+            };
+            // if we find the item, return the index, otherwise check the next list item
+            if &entry.item == item {
+                return Some(Index::new(index, entry.generation));
+            } else {
+                next = entry.next;
+            }
+        }
+
+        None
+    }
+}
+
 impl<T> IntoIterator for IndexList<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
@@ -1123,11 +1124,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<T> std::ops::Index<Index<T>> for IndexList<T>
-where
-    T: PartialEq,
-    T: std::fmt::Debug,
-{
+impl<T> std::ops::Index<Index<T>> for IndexList<T> {
     type Output = T;
 
     fn index(&self, index: Index<T>) -> &Self::Output {
@@ -1135,11 +1132,7 @@ where
     }
 }
 
-impl<T> std::ops::IndexMut<Index<T>> for IndexList<T>
-where
-    T: PartialEq,
-    T: std::fmt::Debug,
-{
+impl<T> std::ops::IndexMut<Index<T>> for IndexList<T> {
     fn index_mut(&mut self, index: Index<T>) -> &mut Self::Output {
         self.get_mut(index).unwrap()
     }
