@@ -907,6 +907,150 @@ where
         }
     }
 
+    /// Inserts an element immediately before the provided index. Returns `None`
+    /// if the element at the provided index was removed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    /// list.insert_before(five, 0);
+    /// 
+    /// assert_eq!(list.head(), Some(&0));
+    /// ```
+    pub fn insert_before(&mut self, index: Index<T>, item: T) -> Option<Index<T>> {
+        // Get the current index
+        let (prev_index, index, _next_index) = match self.contents.get(index.index)? {
+            Entry::Free { .. } => return None,
+            Entry::Occupied(e) => {
+                // are we of the right generation?
+                if index.generation != e.generation {
+                    return None;
+                }
+                (e.prev, index.index, e.next)
+            }
+        };
+        let entry = Entry::Occupied(OccupiedEntry {
+            item,
+            generation: self.generation,
+            next: Some(index),
+            prev: prev_index,
+        });
+        // Insert the item
+        let position = if let Some(position) = self.next_free {
+            // update next_free
+            match self.contents[position] {
+                Entry::Occupied { .. } => panic!("Corrupted list"),
+                Entry::Free { next_free } => self.next_free = next_free,
+            }
+            self.contents[position] = entry;
+            position
+        } else {
+            // we don't have any, so append to the end of the list
+            let position = self.contents.len();
+            self.contents.push(entry);
+            position
+        };
+        match &mut self.contents[index] {
+            Entry::Free { .. } => panic!("Corrupted list"),
+            Entry::Occupied(e) => {
+                e.prev = Some(position);
+            }
+        }
+        // Now, we need to update the prev node, if there was one, as well as
+        // the head, if there wasn't
+        match prev_index {
+            Some(index) => match &mut self.contents[index] {
+                Entry::Occupied(e) => {
+                    e.next = Some(position);
+                }
+                _ => panic!("Corrupted list"),
+            },
+            None => {
+                self.head = Some(position);
+            }
+        }
+        Some(Index::new(position, self.generation))
+    }
+
+    /// Inserts an element immediately after the provided index. Returns `None`
+    /// if the element at the provided index was removed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// extern crate indexlist;
+    ///
+    /// use indexlist::IndexList;
+    ///
+    /// let mut list = IndexList::new();
+    ///
+    /// let five = list.push_back(5);
+    /// list.insert_after(five, 0);
+    /// 
+    /// assert_eq!(list.tail_index().and_then(|tail| list.get(tail)), Some(&0));
+    /// ```
+    pub fn insert_after(&mut self, index: Index<T>, item: T) -> Option<Index<T>> {
+        // Get the current index
+        let (_prev_index, index, next_index) = match self.contents.get(index.index)? {
+            Entry::Free { .. } => return None,
+            Entry::Occupied(e) => {
+                // are we of the right generation?
+                if index.generation != e.generation {
+                    return None;
+                }
+                (e.prev, index.index, e.next)
+            }
+        };
+        let entry = Entry::Occupied(OccupiedEntry {
+            item,
+            generation: self.generation,
+            next: next_index,
+            prev: Some(index),
+        });
+        // Insert the item
+        let position = if let Some(position) = self.next_free {
+            // update next_free
+            match self.contents[position] {
+                Entry::Occupied { .. } => panic!("Corrupted list"),
+                Entry::Free { next_free } => self.next_free = next_free,
+            }
+            self.contents[position] = entry;
+            position
+        } else {
+            // we don't have any, so append to the end of the list
+            let position = self.contents.len();
+            self.contents.push(entry);
+            position
+        };
+        match &mut self.contents[index] {
+            Entry::Free { .. } => panic!("Corrupted list"),
+            Entry::Occupied(e) => {
+                e.next = Some(position);
+            }
+        }
+        // Now, we need to update the prev node, if there was one, as well as
+        // the head, if there wasn't
+        match next_index {
+            Some(index) => match &mut self.contents[index] {
+                Entry::Occupied(e) => {
+                    e.prev = Some(position);
+                }
+                _ => panic!("Corrupted list"),
+            },
+            None => {
+                self.tail = Some(position);
+            }
+        }
+        Some(Index::new(position, self.generation))
+    }
+
     /// Returns an iterator of references to the items in the list.
     ///
     /// # Examples
@@ -1842,5 +1986,37 @@ mod tests {
                 tail: Some(0),
             }
         );
+    }
+
+    #[test]
+    fn insert_before() {
+        let mut list = IndexList::new();
+
+        let index = list.push_front(2);
+        list.insert_before(index, 0);
+
+        assert_eq!(list.iter().copied().collect::<Vec<usize>>(), vec![0, 2]);
+        assert_eq!(*list.get(list.prev_index(index).unwrap()).unwrap(), 0);
+
+        list.insert_before(index, 1);
+
+        assert_eq!(list.iter().copied().collect::<Vec<usize>>(), vec![0, 1, 2]);
+        assert_eq!(*list.get(list.prev_index(index).unwrap()).unwrap(), 1);
+    }
+
+    #[test]
+    fn insert_after() {
+        let mut list = IndexList::new();
+
+        let index = list.push_front(0);
+        list.insert_after(index, 2);
+
+        assert_eq!(list.iter().copied().collect::<Vec<usize>>(), vec![0, 2]);
+        assert_eq!(*list.get(list.next_index(index).unwrap()).unwrap(), 2);
+
+        list.insert_after(index, 1);
+
+        assert_eq!(list.iter().copied().collect::<Vec<usize>>(), vec![0, 1, 2]);
+        assert_eq!(*list.get(list.next_index(index).unwrap()).unwrap(), 1);
     }
 }
