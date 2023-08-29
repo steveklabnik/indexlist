@@ -38,8 +38,6 @@
 //! Creating a list, appending nodes, and printing them out:
 //!
 //! ```
-//! extern crate indexlist;
-//!
 //! use indexlist::IndexList;
 //!
 //! let mut list = IndexList::new();
@@ -57,8 +55,6 @@
 //! Removing an item from the list:
 //!
 //! ```
-//! extern crate indexlist;
-//!
 //! use indexlist::IndexList;
 //!
 //! let mut list = IndexList::new();
@@ -75,8 +71,6 @@
 //! Generational indexes:
 //!
 //! ```
-//! extern crate indexlist;
-//!
 //! use indexlist::IndexList;
 //!
 //! let mut list = IndexList::new();
@@ -147,8 +141,6 @@ struct OccupiedEntry<T> {
 /// You can get an `Index` by inserting something into the list:
 ///
 /// ```
-/// extern crate indexlist;
-///
 /// use indexlist::IndexList;
 ///
 /// let mut list = IndexList::new();
@@ -160,8 +152,6 @@ struct OccupiedEntry<T> {
 /// You can also get one with `index_of`:
 ///
 /// ```
-/// extern crate indexlist;
-///
 /// use indexlist::IndexList;
 ///
 /// let mut list = IndexList::new();
@@ -213,8 +203,6 @@ where
     /// Making a new list:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let list: IndexList<i32> = IndexList::new();
@@ -234,8 +222,6 @@ where
     /// Making a new list:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let list: IndexList<i32> = IndexList::with_capacity(100);
@@ -259,8 +245,6 @@ where
     /// The first item is often the first one that's pushed on:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -273,8 +257,6 @@ where
     /// But of course, not always!
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -304,8 +286,6 @@ where
     /// The first item is often the first one that's pushed on:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -318,8 +298,6 @@ where
     /// But of course, not always!
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -365,8 +343,6 @@ where
     /// Pushing several numbers into a list:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -478,8 +454,6 @@ where
     /// Pushing several numbers into a list:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -562,8 +536,6 @@ where
     /// Checking both possibilities:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -595,8 +567,6 @@ where
     /// Getting an element at an index:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -609,8 +579,6 @@ where
     /// An element that doesn't exist returns `None`:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -625,8 +593,6 @@ where
     /// Generational indexes ensure that we don't access incorrect items:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -664,8 +630,6 @@ where
     /// Getting an element at an index:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -678,8 +642,6 @@ where
     /// An element that doesn't exist returns `None`:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -694,8 +656,6 @@ where
     /// Generational indexes ensure that we don't access incorrect items:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -763,8 +723,6 @@ where
     /// Removing an element from an index:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -780,8 +738,6 @@ where
     /// An element that doesn't exist returns `None`:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -796,8 +752,6 @@ where
     /// Generational indexes ensure that we don't access incorrect items:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -913,8 +867,6 @@ where
     /// # Example
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -985,8 +937,6 @@ where
     /// # Example
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -1058,8 +1008,6 @@ where
     /// Using an iterator to print out all of the items in a list:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -1089,8 +1037,6 @@ where
     /// Finding an item:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
@@ -1133,8 +1079,6 @@ where
     /// Removing the head:
     ///
     /// ```
-    /// extern crate indexlist;
-    ///
     /// use indexlist::IndexList;
     ///
     /// let mut list = IndexList::new();
